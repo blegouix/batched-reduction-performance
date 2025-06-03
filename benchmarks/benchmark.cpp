@@ -13,11 +13,7 @@
 static constexpr std::size_t N = 1024;
 static constexpr std::size_t M = 32;
 
-void dummy_benchmark(benchmark::State &state) {
-  std::array<double, N * M> mat_alloc;
-
-  Kokkos::mdspan<double, Kokkos::extents<std::size_t, N, M>> data(
-      mat_alloc.data(), N, M);
+void filler(Kokkos::mdspan<double, Kokkos::extents<std::size_t, N, M>> data) {
   for (std::size_t i = 0; i < data.extent(0); ++i) {
     for (std::size_t j = 0; j < data.extent(1); ++j) {
       data(i, j) = i * N + j;
@@ -25,6 +21,14 @@ void dummy_benchmark(benchmark::State &state) {
     }
     // std::cout << "\n";
   }
+}
+
+void dummy_benchmark(benchmark::State &state) {
+  std::array<double, N * M> mat_alloc;
+
+  Kokkos::mdspan<double, Kokkos::extents<std::size_t, N, M>> data(
+      mat_alloc.data(), N, M);
+  filler(data);
 
   for (auto _ : state) {
     batched_reduction_kernel::dummy_kernel();
