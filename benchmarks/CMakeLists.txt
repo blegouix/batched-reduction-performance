@@ -3,4 +3,4 @@
 # SPDX-License-Identifier: MIT
 
 add_executable(batched-reduction-performance benchmark.cpp)
-target_link_libraries(batched-reduction-performance PUBLIC benchmark::benchmark batched_reduction_performance_lib)
+target_link_libraries(batched-reduction-performance PUBLIC std::mdspan benchmark::benchmark batched_reduction_performance_lib) # TODO remove dependency to mdspan here
