@@ -42,7 +42,7 @@ void dummy_benchmark(benchmark::State &state) {
   double *mat_ptr = nullptr;
   cudaMalloc(&mat_ptr, M * N * sizeof(double));
 
-  cuda::std::mdspan<double, cuda::std::extents<std::size_t, N, M>> mat(mat_ptr);
+  cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> mat(mat_ptr);
   filler(mat);
 
   for (auto _ : state) {
