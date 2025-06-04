@@ -39,6 +39,7 @@ public:
                             int64_t(M * N * sizeof(double)));
 
     // printer::print<BlockDim1D>(data_out);
+    checker::check<BlockDim1D>(data_out, data_in);
 
     cudaFree(data_in_ptr);
     cudaFree(data_out_ptr);
