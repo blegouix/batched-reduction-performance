@@ -11,14 +11,18 @@
 static constexpr std::size_t M = 1024;
 static constexpr std::size_t N = 32;
 
+static constexpr std::size_t BlockDim1D = 256;
+static constexpr std::size_t BlockDim2D_1 = 16;
+static constexpr std::size_t BlockDim2D_2 = 16;
+
 void dummy_benchmark(benchmark::State &state) {
   double *data_in_ptr = nullptr;
   cudaMalloc(&data_in_ptr, M * N * sizeof(double));
 
   cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> data_in(
       data_in_ptr);
-  filler::fill(data_in);
-  // printer::print(data_in);
+  filler::fill<BlockDim2D_1, BlockDim2D_2>(data_in);
+  // printer::print<BlockDim2D_1, BlockDim2D_2>(data_in);
 
   double *data_out_ptr = nullptr;
   cudaMalloc(&data_out_ptr, M * sizeof(double));
@@ -27,12 +31,12 @@ void dummy_benchmark(benchmark::State &state) {
       data_out_ptr);
 
   for (auto _ : state) {
-    batched_reduction_kernel::Sequential::run(data_out, data_in);
+    batched_reduction_kernel::Sequential<BlockDim1D>::run(data_out, data_in);
   }
   state.SetBytesProcessed(int64_t(state.iterations()) *
                           int64_t(state.range(0) * sizeof(double)));
 
-  printer::print(data_out);
+  printer::print<BlockDim1D>(data_out);
 
   cudaFree(data_in_ptr);
   cudaFree(data_out_ptr);

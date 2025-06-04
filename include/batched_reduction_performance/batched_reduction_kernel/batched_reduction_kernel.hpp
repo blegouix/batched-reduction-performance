@@ -35,6 +35,7 @@ static __global__ void sequential_kernel(
 
 } // namespace detail
 
+template <std::size_t BlockDim>
 class Sequential {
 public:
   template <std::size_t M, std::size_t N>
@@ -42,7 +43,7 @@ public:
   run(cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data_out,
       cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>>
           data_in) {
-    dim3 const blockDim(256);
+    dim3 const blockDim(BlockDim);
     dim3 const gridDim((M + blockDim.x - 1) / blockDim.x);
 
     detail::sequential_kernel<<<gridDim, blockDim>>>(data_out, data_in);

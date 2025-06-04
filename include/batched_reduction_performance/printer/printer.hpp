@@ -43,18 +43,18 @@ __global__ void print_2d_kernel(
   }
 }
 
-template <std::size_t M>
+template <std::size_t BlockDim, std::size_t M>
 void print(cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data) {
-  dim3 const blockDim(256);
+  dim3 const blockDim(BlockDim);
   dim3 const gridDim((M + blockDim.x - 1) / blockDim.x);
 
   print_1d_kernel<<<gridDim, blockDim>>>(data);
 }
 
-template <std::size_t M, std::size_t N>
+template <std::size_t BlockDim1, std::size_t BlockDim2, std::size_t M, std::size_t N>
 void print(
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> data) {
-  dim3 const blockDim(16, 16);
+  dim3 const blockDim(BlockDim1, BlockDim2);
   dim3 const gridDim((M + blockDim.x - 1) / blockDim.x,
                      (N + blockDim.y - 1) / blockDim.y);
 
