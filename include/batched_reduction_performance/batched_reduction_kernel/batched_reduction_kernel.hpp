@@ -9,18 +9,17 @@ namespace batched_reduction_kernel {
 
 namespace detail {
 
-template <std::size_t _M, std::size_t _N>
+template <std::size_t M, std::size_t N>
 static __global__ void sequential_kernel(
-    cuda::std::mdspan<double, cuda::std::extents<std::size_t, _N>> data_out,
-    cuda::std::mdspan<double, cuda::std::extents<std::size_t, _M, _N>>
-        data_in) {
+    cuda::std::mdspan<double, cuda::std::extents<std::size_t, N>> data_out,
+    cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> data_in) {
   std::size_t i = blockIdx.x * blockDim.x + threadIdx.x;
 
-  // if (i < _N && j < _N) {
+  // if (i < N && j < N) {
   double tmp = 0;
   // TOOD shared buffer for data_in[i]
 
-  for (std::size_t j = 0; j < _M; ++j) {
+  for (std::size_t j = 0; j < M; ++j) {
     tmp += data_in(i, j);
   }
 
@@ -33,13 +32,13 @@ static __global__ void sequential_kernel(
 
 class Sequential {
 public:
-  template <std::size_t _M, std::size_t _N>
+  template <std::size_t M, std::size_t N>
   static void
-  run(cuda::std::mdspan<double, cuda::std::extents<std::size_t, _N>> data_out,
-      cuda::std::mdspan<double, cuda::std::extents<std::size_t, _M, _N>>
+  run(cuda::std::mdspan<double, cuda::std::extents<std::size_t, N>> data_out,
+      cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>>
           data_in) {
     dim3 blockDim(256);
-    dim3 gridDim((_N + blockDim.x - 1) / blockDim.x);
+    dim3 gridDim((N + blockDim.x - 1) / blockDim.x);
 
     detail::sequential_kernel<<<gridDim, blockDim>>>(data_out, data_in);
     cudaDeviceSynchronize();

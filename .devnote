@@ -1,6 +1,5 @@
 clarify indexing (i, j, M, N)
 synchronize outside operators
-remove underscore prefix in _M and _N
 clarify block sizes
 constify block sizes
 print out
