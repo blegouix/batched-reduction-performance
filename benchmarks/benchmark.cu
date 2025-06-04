@@ -38,7 +38,7 @@ public:
     state.SetBytesProcessed(int64_t(state.iterations()) *
                             int64_t(M * N * sizeof(double)));
 
-    // printer::print<BlockDim1D>(data_out);
+    printer::print<BlockDim1D>(data_out);
     checker::check<BlockDim1D>(data_out, data_in);
 
     cudaFree(data_in_ptr);
@@ -49,8 +49,7 @@ public:
 BENCHMARK(BatchedReductionBenchmark<
           batched_reduction_operator::Sequential<BlockDim1D>>::run);
 BENCHMARK(BatchedReductionBenchmark<
-          batched_reduction_operator::SequentialWithSharedMemory<BlockDim1D>>::
-              run);
+          batched_reduction_operator::CooperativeGroups<BlockDim1D>>::run);
 
 int main(int argc, char **argv) {
   ::benchmark::Initialize(&argc, argv);

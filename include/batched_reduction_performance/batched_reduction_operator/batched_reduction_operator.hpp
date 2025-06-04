@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2024 Baptiste Legouix
 // SPDX-License-Identifier: MIT
 
-#include <cooperative_groups.h>
+#include <cooperative_groups/reduce.h>
 #include <cuda/std/mdspan>
 
 #pragma once
@@ -13,7 +13,7 @@ namespace batched_reduction_operator {
 namespace detail {
 
 template <std::size_t M, std::size_t N>
-static __global__ void sequential_kernel(
+__global__ void sequential_kernel(
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data_out,
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> data_in) {
   std::size_t i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -56,11 +56,16 @@ public:
 namespace detail {
 
 template <std::size_t M, std::size_t N>
-static __global__ void cooperative_groups_kernel(
+__global__ void cooperative_groups_kernel(
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data_out,
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> data_in) {
+  /*
   std::size_t i = blockIdx.x * blockDim.x + threadIdx.x;
   std::size_t j = blockIdx.y * blockDim.y + threadIdx.y;
+  */
+
+  std::size_t i = blockIdx.x;
+  std::size_t j = threadIdx.x;
 
   double val;
 #if defined ALLOW_UNCOMPLETE_WARP
@@ -97,17 +102,15 @@ static __global__ void cooperative_groups_kernel(
 
 } // namespace detail
 
-template <std::size_t BlockDim1, std::size_t BlockDim2>
-class SequentialWithSharedMemory {
+template <std::size_t BlockDim> class CooperativeGroups {
 public:
   template <std::size_t M, std::size_t N>
   static void
   run(cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data_out,
       cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>>
           data_in) {
-    dim3 const blockDim(BlockDim1, BlockDim2);
-    dim3 const gridDim((M + blockDim.x - 1) / blockDim.x,
-                       (N + blockDim.y - 1) / blockDim.y);
+    dim3 const blockDim(BlockDim);
+    dim3 const gridDim((M + blockDim.x - 1) / blockDim.x);
 
     detail::cooperative_groups_kernel<<<gridDim, blockDim>>>(data_out, data_in);
   }
