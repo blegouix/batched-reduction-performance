@@ -1,6 +1,3 @@
 [submodule "vendor/benchmark"]
 	path = vendor/benchmark
 	url = git@github.com:google/benchmark.git
-[submodule "vendor/mdspan"]
-	path = vendor/mdspan
-	url = git@github.com:kokkos/mdspan.git

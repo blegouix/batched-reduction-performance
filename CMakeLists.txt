@@ -4,9 +4,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(BatchedReductionPerformance VERSION 0.0.0 LANGUAGES CXX CUDA)
 
-## mdspan
-add_subdirectory(vendor/mdspan)
-
 ## Google Benchmark
 option(BENCHMARK_ENABLE_TESTING "Enable testing of the benchmark library." OFF)
 option(

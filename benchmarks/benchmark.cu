@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-#include <mdspan/mdspan.hpp>
+#include <cuda/std/mdspan>
 
 #include <benchmark/benchmark.h>
 
@@ -13,8 +13,8 @@
 // TODO restore .cpp extension
 
 template <std::size_t _M, std::size_t _N>
-__global__ void
-fill_kernel(Kokkos::mdspan<double, Kokkos::extents<std::size_t, _M, _N>> data) {
+__global__ void fill_kernel(
+    cuda::std::mdspan<double, cuda::std::extents<std::size_t, _M, _N>> data) {
   std::size_t i = blockIdx.y * blockDim.y + threadIdx.y;
   std::size_t j = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -25,7 +25,8 @@ fill_kernel(Kokkos::mdspan<double, Kokkos::extents<std::size_t, _M, _N>> data) {
 }
 
 template <std::size_t _M, std::size_t _N>
-void filler(Kokkos::mdspan<double, Kokkos::extents<std::size_t, _M, _N>> data) {
+void filler(
+    cuda::std::mdspan<double, cuda::std::extents<std::size_t, _M, _N>> data) {
   dim3 blockDim(16, 16);
   dim3 gridDim((_M + blockDim.x - 1) / blockDim.x,
                (_N + blockDim.y - 1) / blockDim.y);
@@ -41,7 +42,7 @@ void dummy_benchmark(benchmark::State &state) {
   double *mat_ptr = nullptr;
   cudaMalloc(&mat_ptr, M * N * sizeof(double));
 
-  Kokkos::mdspan<double, Kokkos::extents<std::size_t, N, M>> mat(mat_ptr);
+  cuda::std::mdspan<double, cuda::std::extents<std::size_t, N, M>> mat(mat_ptr);
   filler(mat);
 
   for (auto _ : state) {
