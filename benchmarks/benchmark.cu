@@ -19,6 +19,7 @@ void dummy_benchmark(benchmark::State &state) {
 
   cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> mat(mat_ptr);
   filler::fill(mat);
+  printer::print(mat);
 
   for (auto _ : state) {
     batched_reduction_kernel::dummy_kernel();

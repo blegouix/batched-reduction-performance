@@ -5,3 +5,4 @@
 
 #include "batched_reduction_kernel/batched_reduction_kernel.hpp"
 #include "filler/filler.hpp"
+#include "printer/printer.hpp"

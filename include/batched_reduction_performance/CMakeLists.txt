@@ -3,3 +3,4 @@
 
 add_subdirectory(batched_reduction_kernel)
 add_subdirectory(filler)
+add_subdirectory(printer)
