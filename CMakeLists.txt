@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 cmake_minimum_required(VERSION 3.20)
-project(BatchedReductionPerformance VERSION 0.0.0 LANGUAGES CXX)
+project(BatchedReductionPerformance VERSION 0.0.0 LANGUAGES CXX CUDA)
 
 ## mdspan
 add_subdirectory(vendor/mdspan)
