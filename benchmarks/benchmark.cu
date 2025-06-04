@@ -18,7 +18,7 @@ void dummy_benchmark(benchmark::State &state) {
   cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> data_in(
       data_in_ptr);
   filler::fill(data_in);
-  printer::print(data_in);
+  // printer::print(data_in);
 
   double *data_out_ptr = nullptr;
   cudaMalloc(&data_out_ptr, M * sizeof(double));
@@ -31,6 +31,8 @@ void dummy_benchmark(benchmark::State &state) {
   }
   state.SetBytesProcessed(int64_t(state.iterations()) *
                           int64_t(state.range(0) * sizeof(double)));
+
+  printer::print(data_out);
 
   cudaFree(data_in_ptr);
   cudaFree(data_out_ptr);

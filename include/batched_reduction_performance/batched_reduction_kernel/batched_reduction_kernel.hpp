@@ -17,14 +17,13 @@ static __global__ void sequential_kernel(
 
   if (i < M) {
     double tmp = 0;
-    // TOOD shared buffer for data_in[i]
+    // TODO shared buffer for data_in[i]
 
     for (std::size_t j = 0; j < N; ++j) {
       tmp += data_in(i, j);
     }
 
     data_out(i) = tmp;
-    // printf("%f ", data_out(i));
   }
 }
 
