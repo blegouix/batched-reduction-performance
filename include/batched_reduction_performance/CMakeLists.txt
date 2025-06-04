@@ -2,3 +2,4 @@
 # SPDX-License-Identifier: MIT
 
 add_subdirectory(batched_reduction_kernel)
+add_subdirectory(filler)
