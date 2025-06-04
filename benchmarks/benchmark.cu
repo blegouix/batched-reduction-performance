@@ -47,6 +47,9 @@ public:
 
 BENCHMARK(BatchedReductionBenchmark<
           batched_reduction_operator::Sequential<BlockDim1D>>::run);
+BENCHMARK(BatchedReductionBenchmark<
+          batched_reduction_operator::SequentialWithSharedMemory<BlockDim1D>>::
+              run);
 
 int main(int argc, char **argv) {
   ::benchmark::Initialize(&argc, argv);
