@@ -1,4 +1,3 @@
-clarify indexing (i, j, M, N)
 synchronize outside operators
 clarify block sizes
 constify block sizes

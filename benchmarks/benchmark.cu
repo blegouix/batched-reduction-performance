@@ -8,10 +8,8 @@
 
 #include <batched_reduction_performance/batched_reduction_performance.hpp>
 
-// TODO restore .cpp extension
-
-static constexpr std::size_t M = 32;
-static constexpr std::size_t N = 1024;
+static constexpr std::size_t M = 1024;
+static constexpr std::size_t N = 32;
 
 void dummy_benchmark(benchmark::State &state) {
   double *data_in_ptr = nullptr;
@@ -20,12 +18,12 @@ void dummy_benchmark(benchmark::State &state) {
   cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> data_in(
       data_in_ptr);
   filler::fill(data_in);
-  // printer::print(mat);
+  // printer::print(data_in);
 
   double *data_out_ptr = nullptr;
-  cudaMalloc(&data_out_ptr, N * sizeof(double));
+  cudaMalloc(&data_out_ptr, M * sizeof(double));
 
-  cuda::std::mdspan<double, cuda::std::extents<std::size_t, N>> data_out(
+  cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data_out(
       data_out_ptr);
 
   for (auto _ : state) {

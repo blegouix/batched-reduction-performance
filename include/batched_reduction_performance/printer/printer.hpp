@@ -12,8 +12,8 @@ namespace printer {
 template <std::size_t M, std::size_t N>
 __global__ void print_kernel(
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> data) {
-  std::size_t i = blockIdx.y * blockDim.y + threadIdx.y;
-  std::size_t j = blockIdx.x * blockDim.x + threadIdx.x;
+  std::size_t i = blockIdx.x * blockDim.x + threadIdx.x;
+  std::size_t j = blockIdx.y * blockDim.y + threadIdx.y;
 
   if (i < M && j < N) {
     printf("%f ", static_cast<double>(data(i, j)));

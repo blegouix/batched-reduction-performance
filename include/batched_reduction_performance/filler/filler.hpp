@@ -10,11 +10,11 @@ namespace filler {
 template <std::size_t M, std::size_t N>
 __global__ void fill_kernel(
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> data) {
-  std::size_t i = blockIdx.y * blockDim.y + threadIdx.y;
-  std::size_t j = blockIdx.x * blockDim.x + threadIdx.x;
+  std::size_t i = blockIdx.x * blockDim.x + threadIdx.x;
+  std::size_t j = blockIdx.y * blockDim.y + threadIdx.y;
 
   if (i < M && j < N) {
-    data(i, j) = static_cast<double>(i * N + j);
+    data(i, j) = static_cast<double>(i * M + j);
   }
 }
 
