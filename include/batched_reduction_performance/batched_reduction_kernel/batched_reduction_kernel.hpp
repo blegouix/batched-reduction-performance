@@ -37,8 +37,8 @@ public:
   run(cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data_out,
       cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>>
           data_in) {
-    dim3 blockDim(256);
-    dim3 gridDim((M + blockDim.x - 1) / blockDim.x);
+    dim3 const blockDim(256);
+    dim3 const gridDim((M + blockDim.x - 1) / blockDim.x);
 
     detail::sequential_kernel<<<gridDim, blockDim>>>(data_out, data_in);
   }

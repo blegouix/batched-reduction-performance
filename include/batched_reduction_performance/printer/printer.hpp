@@ -23,9 +23,9 @@ __global__ void print_kernel(
 template <std::size_t M, std::size_t N>
 void print(
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> data) {
-  dim3 blockDim(16, 16);
-  dim3 gridDim((M + blockDim.x - 1) / blockDim.x,
-               (N + blockDim.y - 1) / blockDim.y);
+  dim3 const blockDim(16, 16);
+  dim3 const gridDim((M + blockDim.x - 1) / blockDim.x,
+                     (N + blockDim.y - 1) / blockDim.y);
 
   print_kernel<<<gridDim, blockDim>>>(data);
 }
