@@ -26,7 +26,6 @@ void fill(
                (N + blockDim.y - 1) / blockDim.y);
 
   fill_kernel<<<gridDim, blockDim>>>(data);
-  cudaDeviceSynchronize();
 }
 
 } // namespace filler

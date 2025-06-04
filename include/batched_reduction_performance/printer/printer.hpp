@@ -28,7 +28,6 @@ void print(
                (N + blockDim.y - 1) / blockDim.y);
 
   print_kernel<<<gridDim, blockDim>>>(data);
-  cudaDeviceSynchronize();
 }
 
 } // namespace printer

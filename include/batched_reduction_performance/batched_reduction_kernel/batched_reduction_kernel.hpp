@@ -41,7 +41,6 @@ public:
     dim3 gridDim((M + blockDim.x - 1) / blockDim.x);
 
     detail::sequential_kernel<<<gridDim, blockDim>>>(data_out, data_in);
-    cudaDeviceSynchronize();
   }
 };
 
