@@ -15,7 +15,13 @@ static __global__ void sequential_kernel(
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> data_in) {
   std::size_t i = blockIdx.x * blockDim.x + threadIdx.x;
 
+#if defined ALLOW_UNCOMPLETE_WARP
   if (i < M) {
+#else
+  {
+    static_assert(M % 32 == 0, "Uncomplete warps are not allowed, fix the "
+                               "problem sizes or enable ALLOW_UNCOMPLETE_WARP");
+#endif
     double tmp = 0;
     // TODO shared buffer for data_in[i]
 

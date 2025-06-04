@@ -13,7 +13,14 @@ __global__ void fill_kernel(
   std::size_t i = blockIdx.x * blockDim.x + threadIdx.x;
   std::size_t j = blockIdx.y * blockDim.y + threadIdx.y;
 
+#if defined ALLOW_UNCOMPLETE_WARP
   if (i < M && j < N) {
+#else
+  {
+    static_assert(M % 32 == 0 && N % 32 == 0,
+                  "Uncomplete warps are not allowed, fix the problem sizes or "
+                  "enable ALLOW_UNCOMPLETE_WARP");
+#endif
     data(i, j) = static_cast<double>(i * M + j);
   }
 }
