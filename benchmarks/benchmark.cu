@@ -8,43 +8,45 @@
 
 #include <batched_reduction_performance/batched_reduction_performance.hpp>
 
-static constexpr std::size_t M = 1024;
+static constexpr std::size_t M = 65536;
 static constexpr std::size_t N = 32;
 
 static constexpr std::size_t BlockDim1D = 256;
 static constexpr std::size_t BlockDim2D_1 = 16;
 static constexpr std::size_t BlockDim2D_2 = 16;
 
-void dummy_benchmark(benchmark::State &state) {
-  double *data_in_ptr = nullptr;
-  cudaMalloc(&data_in_ptr, M * N * sizeof(double));
+template <class BatchedReductionOperator> class BatchedReductionBenchmark {
+public:
+  static void run(benchmark::State &state) {
+    double *data_in_ptr = nullptr;
+    cudaMalloc(&data_in_ptr, M * N * sizeof(double));
 
-  cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> data_in(
-      data_in_ptr);
-  filler::fill<BlockDim2D_1, BlockDim2D_2>(data_in);
-  // printer::print<BlockDim2D_1, BlockDim2D_2>(data_in);
+    cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> data_in(
+        data_in_ptr);
+    filler::fill<BlockDim2D_1, BlockDim2D_2>(data_in);
+    // printer::print<BlockDim2D_1, BlockDim2D_2>(data_in);
 
-  double *data_out_ptr = nullptr;
-  cudaMalloc(&data_out_ptr, M * sizeof(double));
+    double *data_out_ptr = nullptr;
+    cudaMalloc(&data_out_ptr, M * sizeof(double));
 
-  cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data_out(
-      data_out_ptr);
+    cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data_out(
+        data_out_ptr);
 
-  for (auto _ : state) {
-    batched_reduction_kernel::Sequential<BlockDim1D>::run(data_out, data_in);
+    for (auto _ : state) {
+      BatchedReductionOperator::run(data_out, data_in);
+    }
+    state.SetBytesProcessed(int64_t(state.iterations()) *
+                            int64_t(M * N * sizeof(double)));
+
+    // printer::print<BlockDim1D>(data_out);
+
+    cudaFree(data_in_ptr);
+    cudaFree(data_out_ptr);
   }
-  state.SetBytesProcessed(int64_t(state.iterations()) *
-                          int64_t(state.range(0) * sizeof(double)));
+};
 
-  printer::print<BlockDim1D>(data_out);
-
-  cudaFree(data_in_ptr);
-  cudaFree(data_out_ptr);
-}
-
-std::size_t constexpr dummy_param = 128;
-
-BENCHMARK(dummy_benchmark)->Arg(dummy_param);
+BENCHMARK(BatchedReductionBenchmark<
+          batched_reduction_operator::Sequential<BlockDim1D>>::run);
 
 int main(int argc, char **argv) {
   ::benchmark::Initialize(&argc, argv);

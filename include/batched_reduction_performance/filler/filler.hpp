@@ -25,7 +25,8 @@ __global__ void fill_kernel(
   }
 }
 
-template <std::size_t BlockDim1, std::size_t BlockDim2, std::size_t M, std::size_t N>
+template <std::size_t BlockDim1, std::size_t BlockDim2, std::size_t M,
+          std::size_t N>
 void fill(
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> data) {
   dim3 const blockDim(BlockDim1, BlockDim2);

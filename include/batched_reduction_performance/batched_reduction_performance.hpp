@@ -3,6 +3,6 @@
 
 #pragma once
 
-#include "batched_reduction_kernel/batched_reduction_kernel.hpp"
+#include "batched_reduction_operator/batched_reduction_operator.hpp"
 #include "filler/filler.hpp"
 #include "printer/printer.hpp"

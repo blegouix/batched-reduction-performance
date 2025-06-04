@@ -5,7 +5,7 @@
 
 #pragma once
 
-namespace batched_reduction_kernel {
+namespace batched_reduction_operator {
 
 namespace detail {
 
@@ -35,8 +35,7 @@ static __global__ void sequential_kernel(
 
 } // namespace detail
 
-template <std::size_t BlockDim>
-class Sequential {
+template <std::size_t BlockDim> class Sequential {
 public:
   template <std::size_t M, std::size_t N>
   static void
@@ -50,4 +49,4 @@ public:
   }
 };
 
-} // namespace batched_reduction_kernel
+} // namespace batched_reduction_operator
