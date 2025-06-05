@@ -34,7 +34,7 @@ struct MakeMDSpan<M, N, cuda::std::layout_stride> {
         ptr, cuda::std::layout_stride::mapping<
                  cuda::std::extents<std::size_t, M, N>>{
                  cuda::std::extents<std::size_t, M, N>{},
-                 cuda::std::array<std::size_t, 2>{stride, 1}});
+                 cuda::std::array<std::size_t, 2>{1, stride}});
   }
 };
 
