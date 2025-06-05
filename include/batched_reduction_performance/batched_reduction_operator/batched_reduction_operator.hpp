@@ -93,14 +93,14 @@ __global__ void cooperative_groups_kernel(
   cooperative_groups::thread_block_tile<32> tile32 =
       cooperative_groups::tiled_partition<32>(
           cooperative_groups::this_thread_block());
-  double sum = cooperative_groups::reduce(tile32, val,
-                                          cooperative_groups::plus<double>());
+  double partial_sum = cooperative_groups::reduce(
+      tile32, val, cooperative_groups::plus<double>());
 
   __shared__ double partial_sums[(N + 31) / 32];
 
   // Thread 0 of each warp writes result to partial_sums
   if (tile32.thread_rank() == 0) {
-    partial_sums[i] = sum;
+    partial_sums[i] = partial_sum;
   }
 
   cooperative_groups::this_thread_block().sync();
