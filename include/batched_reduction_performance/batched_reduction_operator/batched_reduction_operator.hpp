@@ -133,7 +133,8 @@ public:
 
 namespace detail {
 
-template <std::size_t M, std::size_t N, class Layout>
+template <cub::BlockReduceAlgorithm Algorithm, std::size_t M, std::size_t N,
+          class Layout>
 __global__ void cub_block_reduction_kernel(
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data_out,
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>, Layout>
@@ -164,9 +165,11 @@ __global__ void cub_block_reduction_kernel(
 #endif
   }
 
-  __shared__ typename cub::BlockReduce<double, N>::TempStorage temp_storage;
+  __shared__
+      typename cub::BlockReduce<double, N, Algorithm>::TempStorage temp_storage;
 
-  double block_sum = cub::BlockReduce<double, N>(temp_storage).Sum(val);
+  double block_sum =
+      cub::BlockReduce<double, N, Algorithm>(temp_storage).Sum(val);
 
   if (j == 0) {
     data_out(i) = block_sum;
@@ -175,7 +178,7 @@ __global__ void cub_block_reduction_kernel(
 
 } // namespace detail
 
-class CUBBlockReduction {
+template <cub::BlockReduceAlgorithm Algorithm> class CUBBlockReduction {
 public:
   template <std::size_t M, std::size_t N, class Layout>
   static void
@@ -185,8 +188,8 @@ public:
     dim3 const blockDim(N);
     dim3 const gridDim(M);
 
-    detail::cub_block_reduction_kernel<<<gridDim, blockDim>>>(data_out,
-                                                              data_in);
+    detail::cub_block_reduction_kernel<Algorithm>
+        <<<gridDim, blockDim>>>(data_out, data_in);
   }
 };
 

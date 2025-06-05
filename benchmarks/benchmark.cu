@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include <cub/block/block_reduce.cuh>
 #include <cuda/std/mdspan>
 
 #include <benchmark/benchmark.h>
@@ -70,12 +71,24 @@ public:
                                 cuda::std::layout_left>::run);                 \
   BENCHMARK(                                                                   \
       BatchedReductionBenchmark<M, N,                                          \
-                                batched_reduction_operator::CUBBlockReduction, \
+                                batched_reduction_operator::CUBBlockReduction< \
+                                    cub::BLOCK_REDUCE_WARP_REDUCTIONS>,        \
                                 cuda::std::layout_right>::run);                \
   BENCHMARK(                                                                   \
       BatchedReductionBenchmark<M, N,                                          \
-                                batched_reduction_operator::CUBBlockReduction, \
-                                cuda::std::layout_left>::run);
+                                batched_reduction_operator::CUBBlockReduction< \
+                                    cub::BLOCK_REDUCE_WARP_REDUCTIONS>,        \
+                                cuda::std::layout_left>::run);                 \
+  BENCHMARK(BatchedReductionBenchmark<                                         \
+            M, N,                                                              \
+            batched_reduction_operator::CUBBlockReduction<                     \
+                cub::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY>,                    \
+            cuda::std::layout_right>::run);                                    \
+  BENCHMARK(BatchedReductionBenchmark<                                         \
+            M, N,                                                              \
+            batched_reduction_operator::CUBBlockReduction<                     \
+                cub::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY>,                    \
+            cuda::std::layout_left>::run);
 
 /*
 BENCHMARKS(65536, 64);
