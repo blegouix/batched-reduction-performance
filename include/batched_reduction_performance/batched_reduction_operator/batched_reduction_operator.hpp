@@ -12,10 +12,11 @@ namespace batched_reduction_operator {
 
 namespace detail {
 
-template <std::size_t M, std::size_t N>
+template <std::size_t M, std::size_t N, class Layout>
 __global__ void sequential_kernel(
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data_out,
-    cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> data_in) {
+    cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>, Layout>
+        data_in) {
   std::size_t i = blockIdx.x * blockDim.x + threadIdx.x;
 
 #if defined ALLOW_UNCOMPLETE_WARP
@@ -39,10 +40,10 @@ __global__ void sequential_kernel(
 
 template <std::size_t BlockDim> class Sequential {
 public:
-  template <std::size_t M, std::size_t N>
+  template <std::size_t M, std::size_t N, class Layout>
   static void
   run(cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data_out,
-      cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>>
+      cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>, Layout>
           data_in) {
     dim3 const blockDim(BlockDim);
     dim3 const gridDim((M + blockDim.x - 1) / blockDim.x);
@@ -55,10 +56,11 @@ public:
 
 namespace detail {
 
-template <std::size_t M, std::size_t N>
+template <std::size_t M, std::size_t N, class Layout>
 __global__ void cooperative_groups_kernel(
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data_out,
-    cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> data_in) {
+    cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>, Layout>
+        data_in) {
   std::size_t i = blockIdx.x;
   std::size_t j = threadIdx.x;
 
@@ -114,10 +116,10 @@ __global__ void cooperative_groups_kernel(
 
 class CooperativeGroups {
 public:
-  template <std::size_t M, std::size_t N>
+  template <std::size_t M, std::size_t N, class Layout>
   static void
   run(cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data_out,
-      cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>>
+      cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>, Layout>
           data_in) {
     dim3 const blockDim(N);
     dim3 const gridDim(M);

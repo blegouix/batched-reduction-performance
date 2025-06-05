@@ -9,12 +9,13 @@
 
 namespace checker {
 
-template <std::size_t M, std::size_t N>
+template <std::size_t M, std::size_t N, class Layout>
 __global__ void check_kernel(
     bool *mismatch,
     cuda::std::mdspan<bool, cuda::std::extents<std::size_t, M>> buffer,
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> reduced_data,
-    cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> data) {
+    cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>, Layout>
+        data) {
   std::size_t i = blockIdx.x * blockDim.x + threadIdx.x;
 
 #if defined ALLOW_UNCOMPLETE_WARP
@@ -35,10 +36,11 @@ __global__ void check_kernel(
   }
 }
 
-template <std::size_t BlockDim, std::size_t M, std::size_t N>
+template <std::size_t BlockDim, std::size_t M, std::size_t N, class Layout>
 void check(
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> reduced_data,
-    cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> data) {
+    cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>, Layout>
+        data) {
   dim3 const blockDim(BlockDim);
   dim3 const gridDim((M + blockDim.x - 1) / blockDim.x);
 
