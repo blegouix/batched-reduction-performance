@@ -59,11 +59,6 @@ template <std::size_t M, std::size_t N>
 __global__ void cooperative_groups_kernel(
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data_out,
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>> data_in) {
-  /*
-  std::size_t i = blockIdx.x * blockDim.x + threadIdx.x;
-  std::size_t j = blockIdx.y * blockDim.y + threadIdx.y;
-  */
-
   std::size_t i = blockIdx.x;
   std::size_t j = threadIdx.x;
 
@@ -80,13 +75,13 @@ __global__ void cooperative_groups_kernel(
   }
 #if defined ALLOW_UNCOMPLETE_WARP
   else {
+    val = 0.;
 #else
   {
     static_assert(M % 32 == 0 && N % 32 == 0,
                   "Uncomplete warps are not allowed, fix the problem sizes or "
                   "enable ALLOW_UNCOMPLETE_WARP");
 #endif
-    val = 0.;
   }
 
   // Perform reduction within the block
@@ -100,7 +95,7 @@ __global__ void cooperative_groups_kernel(
 
   // Thread 0 of each warp writes result to partial_sums
   if (tile32.thread_rank() == 0) {
-    partial_sums[i] = partial_sum;
+    partial_sums[tile32.meta_group_rank()] = partial_sum;
   }
 
   cooperative_groups::this_thread_block().sync();
@@ -117,15 +112,15 @@ __global__ void cooperative_groups_kernel(
 
 } // namespace detail
 
-template <std::size_t BlockDim> class CooperativeGroups {
+class CooperativeGroups {
 public:
   template <std::size_t M, std::size_t N>
   static void
   run(cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data_out,
       cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>>
           data_in) {
-    dim3 const blockDim(BlockDim);
-    dim3 const gridDim((M + blockDim.x - 1) / blockDim.x);
+    dim3 const blockDim(N);
+    dim3 const gridDim(M);
 
     detail::cooperative_groups_kernel<<<gridDim, blockDim>>>(data_out, data_in);
   }
