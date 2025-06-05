@@ -129,12 +129,12 @@ public:
   }
 };
 
-// Parallel operator using CUB reduction (CUDA reference implementation)
+// Parallel operator using CUB block reduction
 
 namespace detail {
 
 template <std::size_t M, std::size_t N, class Layout>
-__global__ void cub_reduction_kernel(
+__global__ void cub_block_reduction_kernel(
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data_out,
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>, Layout>
         data_in) {
@@ -175,7 +175,7 @@ __global__ void cub_reduction_kernel(
 
 } // namespace detail
 
-class CUBReduction {
+class CUBBlockReduction {
 public:
   template <std::size_t M, std::size_t N, class Layout>
   static void
@@ -185,7 +185,8 @@ public:
     dim3 const blockDim(N);
     dim3 const gridDim(M);
 
-    detail::cub_reduction_kernel<<<gridDim, blockDim>>>(data_out, data_in);
+    detail::cub_block_reduction_kernel<<<gridDim, blockDim>>>(data_out,
+                                                              data_in);
   }
 };
 
