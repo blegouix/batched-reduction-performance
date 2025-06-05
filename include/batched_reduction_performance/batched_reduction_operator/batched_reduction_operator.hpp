@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 #include <cooperative_groups/reduce.h>
+#include <cub/block/block_reduce.cuh>
 #include <cuda/std/mdspan>
 
 #pragma once
@@ -77,13 +78,13 @@ __global__ void cooperative_groups_kernel(
   }
 #if defined ALLOW_UNCOMPLETE_WARP
   else {
-    val = 0.;
 #else
   {
     static_assert(M % 32 == 0 && N % 32 == 0,
                   "Uncomplete warps are not allowed, fix the problem sizes or "
                   "enable ALLOW_UNCOMPLETE_WARP");
 #endif
+    val = 0.;
   }
 
   // Perform reduction within the block
@@ -125,6 +126,67 @@ public:
     dim3 const gridDim(M);
 
     detail::cooperative_groups_kernel<<<gridDim, blockDim>>>(data_out, data_in);
+  }
+};
+
+// Parallel operator using CUB reduction (CUDA reference implementation)
+
+namespace detail {
+
+template <std::size_t M, std::size_t N, class Layout>
+__global__ void cub_reduction_kernel(
+    cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data_out,
+    cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>, Layout>
+        data_in) {
+
+  std::size_t i = blockIdx.x;
+  std::size_t j = threadIdx.x;
+
+  double val;
+#if defined ALLOW_UNCOMPLETE_WARP
+  if (i < M && j < N) {
+#else
+  {
+    static_assert(M % 32 == 0 && N % 32 == 0,
+                  "Uncomplete warps are not allowed, fix the problem sizes or "
+                  "enable ALLOW_UNCOMPLETE_WARP");
+#endif
+    val = data_in(i, j);
+  }
+#if defined ALLOW_UNCOMPLETE_WARP
+  else {
+#else
+  {
+    static_assert(M % 32 == 0 && N % 32 == 0,
+                  "Uncomplete warps are not allowed, fix the problem sizes or "
+                  "enable ALLOW_UNCOMPLETE_WARP");
+#endif
+    val = 0.;
+  }
+
+  __shared__ typename cub::BlockReduce<double, N>::TempStorage temp_storage;
+
+  double block_sum = cub::BlockReduce<double, N>(temp_storage).Sum(val);
+  printf("lul");
+
+  if (j == 0) {
+    data_out(i) = block_sum;
+  }
+}
+
+} // namespace detail
+
+class CUBReduction {
+public:
+  template <std::size_t M, std::size_t N, class Layout>
+  static void
+  run(cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data_out,
+      cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>, Layout>
+          data_in) {
+    dim3 const blockDim(N);
+    dim3 const gridDim(M);
+
+    detail::cub_reduction_kernel<<<gridDim, blockDim>>>(data_out, data_in);
   }
 };
 

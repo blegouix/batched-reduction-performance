@@ -67,7 +67,16 @@ public:
   BENCHMARK(                                                                   \
       BatchedReductionBenchmark<M, N,                                          \
                                 batched_reduction_operator::CooperativeGroups, \
+                                cuda::std::layout_left>::run);                 \
+  BENCHMARK(                                                                   \
+      BatchedReductionBenchmark<M, N,                                          \
+                                batched_reduction_operator::CUBReduction,      \
+                                cuda::std::layout_right>::run);                \
+  BENCHMARK(                                                                   \
+      BatchedReductionBenchmark<M, N,                                          \
+                                batched_reduction_operator::CUBReduction,      \
                                 cuda::std::layout_left>::run);
+
 
 /*
 BENCHMARKS(65536, 64);
