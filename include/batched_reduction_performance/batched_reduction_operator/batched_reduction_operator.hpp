@@ -90,12 +90,14 @@ __global__ void cooperative_groups_kernel(
   }
 
   // Perform reduction within the block
-  double sum =
-      cooperative_groups::reduce(cooperative_groups::this_thread_block(), val,
-                                 cooperative_groups::plus<double>());
+  cooperative_groups::thread_block_tile<32> tile32 =
+      cooperative_groups::tiled_partition<32>(
+          cooperative_groups::this_thread_block());
+  double sum = cooperative_groups::reduce(tile32, val,
+                                          cooperative_groups::plus<double>());
 
   // Thread 0 writes result to output
-  if (cooperative_groups::this_thread_block().thread_rank() == 0) {
+  if (tile32.meta_group_rank() == 0 && tile32.thread_rank() == 0) {
     data_out(i) = sum;
   }
 }
