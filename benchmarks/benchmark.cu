@@ -8,8 +8,7 @@
 
 #include <batched_reduction_performance/batched_reduction_performance.hpp>
 
-// static constexpr std::size_t M = 131072;
-static constexpr std::size_t M = 4096;
+static constexpr std::size_t M = 131072;
 static constexpr std::size_t N = 4096;
 
 static constexpr std::size_t BlockDim1D = 256;
