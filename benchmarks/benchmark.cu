@@ -13,6 +13,33 @@ static constexpr std::size_t BlockDim1D = 256;
 static constexpr std::size_t BlockDim2D_1 = 16;
 static constexpr std::size_t BlockDim2D_2 = 16;
 
+static constexpr std::size_t stride =
+    32; // Attempt to optimize benchmarks using layout_stride according to warp
+        // size
+
+template <std::size_t M, std::size_t N, class Layout> struct MakeDataIn {
+  static cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>,
+                           Layout>
+  run(double *ptr) {
+    return cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>,
+                             Layout>(ptr);
+  }
+};
+
+template <std::size_t M, std::size_t N>
+struct MakeDataIn<M, N, cuda::std::layout_stride> {
+  static cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>,
+                           cuda::std::layout_stride>
+  run(double *ptr) {
+    return cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>,
+                             cuda::std::layout_stride>(
+        ptr, cuda::std::layout_stride::mapping<
+                 cuda::std::extents<std::size_t, M, N>>{
+                 cuda::std::extents<std::size_t, M, N>{},
+                 cuda::std::array<std::size_t, 2>{stride, 1}});
+  }
+};
+
 template <std::size_t M, std::size_t N, class BatchedReductionOperator,
           class Layout>
 class BatchedReductionBenchmark {
@@ -30,7 +57,7 @@ public:
     cudaMalloc(&data_in_ptr, M * N * sizeof(double));
 
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>, Layout>
-        data_in(data_in_ptr);
+        data_in = MakeDataIn<M, N, Layout>::run(data_in_ptr);
     filler::fill<BlockDim2D_1, BlockDim2D_2>(data_in);
     // printer::print<BlockDim2D_1, BlockDim2D_2>(data_in);
 
@@ -61,6 +88,9 @@ public:
   BENCHMARK(BatchedReductionBenchmark<                                         \
             M, N, batched_reduction_operator::Sequential<BlockDim1D>,          \
             cuda::std::layout_left>::run);                                     \
+  BENCHMARK(BatchedReductionBenchmark<                                         \
+            M, N, batched_reduction_operator::Sequential<BlockDim1D>,          \
+            cuda::std::layout_stride>::run);                                   \
   BENCHMARK(                                                                   \
       BatchedReductionBenchmark<M, N,                                          \
                                 batched_reduction_operator::CooperativeGroups, \
@@ -69,6 +99,10 @@ public:
       BatchedReductionBenchmark<M, N,                                          \
                                 batched_reduction_operator::CooperativeGroups, \
                                 cuda::std::layout_left>::run);                 \
+  BENCHMARK(                                                                   \
+      BatchedReductionBenchmark<M, N,                                          \
+                                batched_reduction_operator::CooperativeGroups, \
+                                cuda::std::layout_stride>::run);               \
   BENCHMARK(                                                                   \
       BatchedReductionBenchmark<M, N,                                          \
                                 batched_reduction_operator::CUBBlockReduction< \
