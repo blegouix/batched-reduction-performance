@@ -96,9 +96,22 @@ __global__ void cooperative_groups_kernel(
   double sum = cooperative_groups::reduce(tile32, val,
                                           cooperative_groups::plus<double>());
 
-  // Thread 0 writes result to output
-  if (tile32.meta_group_rank() == 0 && tile32.thread_rank() == 0) {
-    data_out(i) = sum;
+  __shared__ double partial_sums[(N + 31) / 32];
+
+  // Thread 0 of each warp writes result to partial_sums
+  if (tile32.thread_rank() == 0) {
+    partial_sums[i] = sum;
+  }
+
+  cooperative_groups::this_thread_block().sync();
+
+  // Thread 0 of warp 0 aggregates the partial sums
+  if (cooperative_groups::this_thread_block().thread_rank() == 0) {
+    double total = 0.0;
+    for (std::size_t k = 0; k < (N + 31) / 32; ++k) {
+      total += partial_sums[k];
+    }
+    data_out(i) = total;
   }
 }
 
