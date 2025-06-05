@@ -78,13 +78,13 @@ __global__ void cooperative_groups_kernel(
   }
 #if defined ALLOW_UNCOMPLETE_WARP
   else {
+    val = 0.;
 #else
   {
     static_assert(M % 32 == 0 && N % 32 == 0,
                   "Uncomplete warps are not allowed, fix the problem sizes or "
                   "enable ALLOW_UNCOMPLETE_WARP");
 #endif
-    val = 0.;
   }
 
   // Perform reduction within the block
@@ -155,19 +155,18 @@ __global__ void cub_reduction_kernel(
   }
 #if defined ALLOW_UNCOMPLETE_WARP
   else {
+    val = 0.;
 #else
   {
     static_assert(M % 32 == 0 && N % 32 == 0,
                   "Uncomplete warps are not allowed, fix the problem sizes or "
                   "enable ALLOW_UNCOMPLETE_WARP");
 #endif
-    val = 0.;
   }
 
   __shared__ typename cub::BlockReduce<double, N>::TempStorage temp_storage;
 
   double block_sum = cub::BlockReduce<double, N>(temp_storage).Sum(val);
-  printf("lul");
 
   if (j == 0) {
     data_out(i) = block_sum;
