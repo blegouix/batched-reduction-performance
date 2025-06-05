@@ -8,12 +8,17 @@
 
 #include <batched_reduction_performance/batched_reduction_performance.hpp>
 
-static constexpr std::size_t M = 65536;
-static constexpr std::size_t N = 32;
+static constexpr std::size_t M = 131072;
+static constexpr std::size_t N = 4096;
 
 static constexpr std::size_t BlockDim1D = 256;
 static constexpr std::size_t BlockDim2D_1 = 16;
 static constexpr std::size_t BlockDim2D_2 = 16;
+
+static_assert(M >= BlockDim1D &&
+              "M has to be equal or greater than BlockDim1D");
+static_assert(M >= BlockDim2D_1 * BlockDim2D_2 &&
+              "M has to be equal or greater than BlockDim2D_1*BlockDim2D_2");
 
 template <class BatchedReductionOperator> class BatchedReductionBenchmark {
 public:
@@ -49,8 +54,7 @@ public:
 BENCHMARK(BatchedReductionBenchmark<
           batched_reduction_operator::Sequential<BlockDim1D>>::run);
 BENCHMARK(BatchedReductionBenchmark<
-          batched_reduction_operator::SequentialWithSharedMemory<BlockDim1D>>::
-              run);
+          batched_reduction_operator::CooperativeGroups>::run);
 
 int main(int argc, char **argv) {
   ::benchmark::Initialize(&argc, argv);
