@@ -104,7 +104,8 @@ BENCHMARKS(32768, 1024);
 BENCHMARKS(65536, 1024);
 */
 
-BENCHMARKS(131072, 1024);
+BENCHMARKS(1024, 1024);
+BENCHMARKS(65536, 1024);
 
 int main(int argc, char **argv) {
   ::benchmark::Initialize(&argc, argv);
