@@ -19,6 +19,9 @@ class BatchedReductionBenchmark {
                 "M has to be equal or greater than BlockDim1D");
   static_assert(M >= BlockDim2D_1 * BlockDim2D_2 &&
                 "M has to be equal or greater than BlockDim2D_1*BlockDim2D_2");
+  static_assert(
+      N <= 1024 &&
+      "N has to be at most 1024 which is the number of threads per SM");
 
 public:
   static void run(benchmark::State &state) {
@@ -66,16 +69,21 @@ public:
                                 batched_reduction_operator::CooperativeGroups, \
                                 cuda::std::layout_left>::run);
 
+/*
+BENCHMARKS(65536, 64);
+BENCHMARKS(65536, 128);
+BENCHMARKS(65536, 256);
 BENCHMARKS(65536, 512);
 BENCHMARKS(65536, 1024);
-BENCHMARKS(65536, 2048);
 
-BENCHMARKS(4096, 4096);
-BENCHMARKS(8192, 4096);
-BENCHMARKS(16384, 4096);
-BENCHMARKS(32768, 4096);
+BENCHMARKS(4096, 1024);
+BENCHMARKS(8192, 1024);
+BENCHMARKS(16384, 1024);
+BENCHMARKS(32768, 1024);
+BENCHMARKS(65536, 1024);
+*/
 
-BENCHMARKS(65536, 4096);
+BENCHMARKS(131072, 1024);
 
 int main(int argc, char **argv) {
   ::benchmark::Initialize(&argc, argv);
