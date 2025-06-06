@@ -89,9 +89,9 @@
 
 \vspace{30pt}
 
-\subsection*{Abstract}
+\subsection*{Github repo}
 
-placeholder
+\href{https://github.com/blegouix/batched-reduction-performance}{https://github.com/blegouix/batched-reduction-performance}
 
 \newpage
 
@@ -144,7 +144,7 @@ There are plently of ways to improve the performance of a code running on GPU, a
 A batched reduction is a mathematical operation which aims to compute from a matrix $A$ the vector $B$ containing the sums:
 
 \[
-B_i = \sum_{j<N} = A_{ij}
+B_i = \sum_{j<N} A_{ij}
 \]
 
 From the physical point-of-view, this operation is involved in the numerical computation of integrals along a $1D$ dimension in an $ND$ space:
@@ -198,7 +198,7 @@ __global__ void cooperative_groups_kernel(
 
   double val = A(i, j);
 
-  // Perform reduction within the block
+  // Perform reduction within the warp 
   cooperative_groups::thread_block_tile<32> tile32 =
       cooperative_groups::tiled_partition<32>(
           cooperative_groups::this_thread_block());
@@ -232,7 +232,7 @@ The strategy is the following: we declare \textit{tile32} to represent a warp, a
 \textit{CUB} is a Nvidia library which provides higher-level function compared to CUDA. It contains in particular thread, warp, block and device-level functions dedicated to reduction:
 
 \begin{itemize}
-	\item The thread-level reduction function corresponds exactly to the implementation proposed in the \textit{Sequential embarassing parallelization section}.
+	\item The thread-level reduction function corresponds exactly to the implementation proposed in the \textit{Sequential embarassing parallelization} section.
 	\item The warp-level reduction corresponds probably to the \textit{cooperative\_groups::reduce} function when applied on a tile representing a warp.
 	\item The block-level reduction corresponds probably to our \textit{cooperative\_groups\_kernel} function presented above.
 	\item The device-level reduction is called from CPU but implements a non-batched reduction, thus does not suit our needs.
@@ -291,8 +291,36 @@ The tests are performed on a $A100$ GPU. Every layouts are tested for every meth
 \begin{itemize}
 	\item $N = 1024$ and $M=32$ which is a small case where each warp can perform a complete unitary reduction using the \textit{CUB} block-reduction methods.
 	\item $N = 1024$ and $M=1024$ which is a case where each SM can perform a complete unitary reduction using the \textit{CUB} block-reduction methods.
-	\item $N = 1024$ and $M=1024$ which is a case big enough to fill the GPU even using the sequential embarassingly-parallel method.
+	\item $N = 65536$ and $M=1024$ which is a case big enough to fill the GPU even using the sequential embarassingly-parallel method.
 \end{itemize}
+
+The values reported in the table are the \textit{throughputs} of the different executions, that is to say the quantity of data processed per second. For compactness, BLOCK\_REDUCE\_WARP\_REDUCTIONS is called BRWR and BLOCK\_REDUCE\_RAKING\_COMMUTATIVE\_ONLY is called BRRCO.
+
+\small
+\begin{center}
+\begin{tabular}{c|r|r|r|r|r|r|r|r|r }
+	\textbf{Size} & \multicolumn{3}{c|}{\textbf{N = 1024} \& \textbf{M = 32}} & \multicolumn{3}{c|}{\textbf{N = 1024} \& \textbf{M = 1024}} & \multicolumn{3}{c|}{\textbf{N = 65536} \& \textbf{M = 1024}} \\ 
+\hline
+	\textbf{Layout} & \textbf{Seq} & \textbf{BRWR} & \textbf{BRRCO} & \textbf{Seq} & \textbf{BRWR} & \textbf{BRRCO} & \textbf{Seq} & \textbf{BRWR} & \textbf{BRRCO} \\
+  \hline		
+	Right & 57Gb/s & 65Gb/s & 64Gb/s & 166Gb/s & 853Gb/s & \textcolor{teal}{1.01Tb/s} & 1.00Tb/s & 1.12Tb/s & 1.32Tb/s  \\
+	Left & 75Gb/s & 66Gb/s & 65Gb/s & 328Gb/s & 460Gb/s & 520Gb/s & 1.67Tb/s & 117Gb/s & 172Gb/s \\
+	RightStride & 58GB/s & 64Gb/s & 64Gb/s & 128Gb/s & 810Gb/s & \textcolor{teal}{951Gb/s} & 1.13Tb/s & 1.34Tb/s & 1.65Tb/s \\
+	LeftStride & 75Gb/s & 62Gb/s & 64Gb/s & 319Gb/s & 462Gb/s & 500Gb/s & \textcolor{teal}{11.8Tb/s} & 698Gb/s & 803Gb/s \\
+\end{tabular}
+\end{center}
+\normalsize
+
+Analyzing those results would require to launch Nsight and identify the bottlenecks for each case. I do not have the time to do so, but we can still emit few hypothesis related to the \textit{green} cases (those which exhibit the best performance):
+
+\begin{itemize}
+	\item For the $N=M=1024$ case, the best performance is obtained with \textit{BRRCO} in \textit{Right} memory layout. According to the SIMT execution model and in this situation, each thread of a warp has to synchronously read one $A_{ij}$ for a fixed $i$, and this done by incrementing a cursor position in the global memory (like, thread $1$ reads memory case $1$, thread $2$ reads memory case $2$ and so on).
+	\item For the $N=65536$ \& $M=1024$ case, the best performance is obtained with \textit{Seq} in \textit{LeftStride} memory layout. According to the SIMT execution model and in this situation, each thread of a warp has to synchroneously read one $A_{ij}$ for a fixed $j$, and this also done by incrementing a cursor position in the data (like, thread $1$ reads memory case $1$, thread $2$ reads memory case $2$ and so on).
+\end{itemize}
+
+To conclude, the rule of thumb to choose the memory layouts seems to be: data must be read \textit{in the order it is stored in memory}, but keeping in mind the SIMT model (every threads of a warp has to perform an instruction accessing the data \textit{before} performing the next one).
+
+\textcolor{red}{This work and those results deserve to be explored further but is stalled indefinitely.}
 
 \newpage
 \nocite{*}
