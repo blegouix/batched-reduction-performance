@@ -133,7 +133,7 @@ There are plently of ways to improve the performance of a code running on GPU, a
 
 \begin{itemize}
 	\item Get the highest possible GPU occupancy (as much threads as possible must be active simultaneously).
-	\item Using memory \textit{to the nearest} of the thread (avoid the allocation of buffers in the global memory if shared memory or registers can be used).
+	\item Using memory \textit{to the nearest} of the thread (avoid the allocation of buffers in the global memory if shared memory\cite{cudasharedmemory} or registers can be used).
 	\item Order correctly the data stored in the global memory to read and write it efficiently (coalescent accesses).
 \end{itemize}
 
@@ -182,7 +182,109 @@ __global__ void sequential_kernel(
 }
 \end{lstlisting}
 
-placeholder\cite{cudasharedmemory}
+\subsubsection{\textit{cooperative\_groups::reduce}-based parallelization}
+
+The problem of sequential algorithm is that a small value for $M$ should lead to low occupancy of the GPU threads. We should thus explore more sophisticated algorithm which parallelize the unitary reductions themselves.
+
+Such algorithms can be directly written in CUDA. This is though not something we discuss in this document, because we expect standard implementations provided by Nvidia to be already optimized and thus produce the best possible performances if correctly used. We begin by relying on the \textit{cooperative\_groups::reduce} method, which is the lowest-level function dedicated to reduction provided in CUDA.
+
+\begin{lstlisting}[language=C++]
+template <std::size_t M, std::size_t N, class Layout>
+__global__ void cooperative_groups_kernel(
+    cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> B,
+    cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>, Layout> A) {
+  std::size_t i = blockIdx.x;
+  std::size_t j = threadIdx.x;
+
+  double val = A(i, j);
+
+  // Perform reduction within the block
+  cooperative_groups::thread_block_tile<32> tile32 =
+      cooperative_groups::tiled_partition<32>(
+          cooperative_groups::this_thread_block());
+  double partial_sum = cooperative_groups::reduce(
+      tile32, val, cooperative_groups::plus<double>());
+
+  __shared__ double partial_sums[(N + 31) / 32];
+
+  // Thread 0 of each warp writes result to partial_sums
+  if (tile32.thread_rank() == 0) {
+    partial_sums[tile32.meta_group_rank()] = partial_sum;
+  }
+
+  cooperative_groups::this_thread_block().sync();
+
+  // Thread 0 of warp 0 aggregates the partial sums
+  if (cooperative_groups::this_thread_block().thread_rank() == 0) {
+    double sum = 0.0;
+    for (std::size_t k = 0; k < (N + 31) / 32; ++k) {
+      sum += partial_sums[k];
+    }
+    B(i) = sum;
+  }
+}
+\end{lstlisting}
+
+The strategy is the following: we declare \textit{tile32} to represent a warp, and we rely on \textit{cooperative\_groups::reduce} to perform the reduction within each warp, leading to partial sums of $32$ elements stored in the shared memory. We then use the very first thread of the block (indexed by $j=0$) to finally perform the sum of the partial sums sequentially and write it in the global memory.
+
+\subsubsection{\textit{CUB}-based parallelization}
+
+\textit{CUB} is a Nvidia library which provides higher-level function compared to CUDA. It contains in particular thread, warp, block and device-level functions dedicated to reduction:
+
+\begin{itemize}
+	\item The thread-level reduction function corresponds exactly to the implementation proposed in the \textit{Sequential embarassing parallelization section}.
+	\item The warp-level reduction corresponds probably to the \textit{cooperative\_groups::reduce} function when applied on a tile representing a warp.
+	\item The block-level reduction corresponds probably to our \textit{cooperative\_groups\_kernel} function presented above.
+	\item The device-level reduction is called from CPU but implements a non-batched reduction, thus does not suit our needs.
+\end{itemize}
+
+The measurements exhibited very similar performance between the \textit{cooperative\_groups\_kernel} from the precedent section, and the block-level \textit{CUB} reduction below using the \textit{BLOCK\_REDUCE\_WARP\_REDUCTIONS} algorithm. We thus won't report the measurements with \textit{cooperative\_groups\_kernel} because I suspect both methods to be perfectly equivalent.
+
+\begin{lstlisting}[language=C++]
+template <cub::BlockReduceAlgorithm Algorithm, std::size_t M, std::size_t N,
+          class Layout>
+__global__ void cub_block_reduction_kernel(
+    cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> B,
+    cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>, Layout> A) {
+  std::size_t i = blockIdx.x;
+  std::size_t j = threadIdx.x;
+
+  double val;
+
+  val = A(i, j);
+
+  __shared__ typename cub::BlockReduce<double, N, Algorithm>::TempStorage temp_storage;
+
+  double block_sum =
+      cub::BlockReduce<double, N, Algorithm>(temp_storage).Sum(val);
+
+  if (j == 0) {
+    B(i) = block_sum;
+  }
+}
+\end{lstlisting}
+
+Two algorithms have been tested. Please refer on the \textit{CUB} documentation for details:
+
+\begin{itemize}
+\item BLOCK\_REDUCE\_WARP\_REDUCTIONS
+\item BLOCK\_REDUCE\_RAKING\_COMMUTATIVE\_ONLY 
+\end{itemize}
+
+\subsection{Memory layout for $A$ in the global memory}
+
+$A$ being a matrix, there are several ways to store it in the global memory. We test four layouts:
+
+\begin{itemize}
+	\item \textit{Right} layout: the $j$ indexing is contiguous.
+	\item \textit{Left} layout: the $i$ indexing is contiguous.
+	\item \textit{RightStride} layout: the $j$ indexing is contiguous but \textit{by blocks of 32 elements}. The idea is to fit the size of a warp.
+	\item \textit{LeftStride} layout: the $i$ indexing is contiguous but \textit{by blocks of 32 elements}. The idea is to fit the size of a warp.
+\end{itemize}
+
+\section{Performance results}
+
+We report the first evaluation of performance of the several approaches presented above. As mentioned precedently, the measurements with \textit{cooperative\_groups\_kernel} are not reported because I suspect it to be perfectly equivalent to the \textit{BLOCK\_REDUCE\_WARP\_REDUCTIONS} algorithm.
 
 \newpage
 \nocite{*}
