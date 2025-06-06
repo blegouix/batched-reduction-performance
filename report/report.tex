@@ -98,7 +98,7 @@ placeholder
 \setcounter{page}{1}
 \fancyfoot[R]{\thepage}
 
-\section{Presentation}
+\section{GPU performance programming}
 
 % \subsection*{Introduction}
 
@@ -119,13 +119,68 @@ If threads inside a warp are automatically synchronized due to the SIMT model (a
 
 Note: if threads within a warp are running synchronously, the \textit{ordering} of the execution is undetermined (we do not know which thread will be the first to finish the execution of a single instruction).
 
-Note: since CUDA 9 the SIMT model has been slightly relaxed which can lead to subtle desynchronizations within a warp, which justify the need for the \textit{\_\_syncwarp()} CUDA function.
+Note: since CUDA 9, the SIMT model has been slightly relaxed which can lead to subtle desynchronizations within a warp, which justify the need for the \textit{\_\_syncwarp()} CUDA function.
 
 \subsection{CUDA programming model}
 
 CUDA is the native language provided by Nvidia (chip manufacturer) to program for GPU. It relies on \textit{CUDA kernels} which contain the code to be executed on the GPU. 
 
-The calls of launching CUDA kernels are parametrized with two compile-time integers: the \textit{grid size} and the \emph{block size}. Those two numbers correspond respectively to the number of SM and the number of threads per SM to be used by the CUDA kernel. If the block size is not a multiple of the warp size (32 in every current architectures), the compiler will automatically mask off exceding threads.
+The calls to launch CUDA kernels are parametrized with two compile-time integers: the \textit{grid size} and the \emph{block size}. Those two numbers correspond respectively to the number of SM and the number of threads per SM to execute the CUDA kernel. If the block size is not a multiple of the warp size (which is 32 in all current architectures), the compiler will automatically mask off exceeding threads within the last warp. Actually, CUDA allows to configure kernels with pairs or triplet of integers to conveniently run through multidimensional arrays (until 3D), but this is internally flattened to a 1D map so we will discuss only the 1D grid and block sizes.
+
+\subsection{Performance guidelines}
+
+There are plently of ways to improve the performance of a code running on GPU, and Nvidia provides dedicated tools to measure and analyse the differents processes that may impact the performance. We list here the main topics we are interested in this mini-project:
+
+\begin{itemize}
+	\item Get the highest possible GPU occupancy (as much threads as possible must be active simultaneously).
+	\item Using memory \textit{to the nearest} of the thread (avoid the allocation of buffers in the global memory if shared memory or registers can be used).
+	\item Order correctly the data stored in the global memory to read and write it efficiently (coalescent accesses).
+\end{itemize}
+
+\section{Batched reduction problem}
+
+\subsection{Presentation}
+
+A batched reduction is a mathematical operation which aims to compute from a matrix $A$ the vector $B$ containing the sums:
+
+\[
+B_i = \sum_{j<N} = A_{ij}
+\]
+
+From the physical point-of-view, this operation is involved in the numerical computation of integrals along a $1D$ dimension in an $ND$ space:
+
+\[
+b(y, z, ...) = \int a(x, y, z, ...)\; dx
+\]
+
+The index $j$ corresponds to the discretization of the \textit{dimension of interest} (ie. $x$) while the index $i$ corresponds to the other dimensions (ie. $y, z, ...$).
+
+The interest of the study of this numerical problem from the performance point-of-view is that this is a very simple example of problem which is manifestly parallelizable but may require communication between threads depending on the algorithm chosen for its resolution.
+
+\subsection{Algorithms}
+
+\subsubsection{Sequential embarassing parallelization}
+
+An \textit{embarassingly parallel} problem is composed of subproblems which are all independent one-to-the-others. It is then very simple to parallelize as no communication between threads is required. All buffers can be written in the thread-local registers.
+
+The batched reduction is embarassingly parallel along the batch index $i$. The following CUDA kernel can thus be written to obtain an implementation where each thread computes a unitary reduction using a sequential \textit{for} loop:
+
+\begin{lstlisting}[language=C++]
+template <std::size_t M, std::size_t N, class Layout>
+__global__ void sequential_kernel(
+    cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> B,
+    cuda::std::mdspan<double, cuda::std::extents<std::size_t, M, N>, Layout> A) {
+  std::size_t i = blockIdx.x * blockDim.x + threadIdx.x;
+
+  double sum = 0;
+
+  for (std::size_t j = 0; j < N; ++j) {
+    sum += A(i, j);
+  }
+
+  B(i) = sum;
+}
+\end{lstlisting}
 
 placeholder\cite{cudasharedmemory}
 
