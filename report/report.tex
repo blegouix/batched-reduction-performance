@@ -286,6 +286,14 @@ $A$ being a matrix, there are several ways to store it in the global memory. We 
 
 We report the first evaluation of performance of the several approaches presented above. As mentioned precedently, the measurements with \textit{cooperative\_groups\_kernel} are not reported because I suspect it to be perfectly equivalent to the \textit{BLOCK\_REDUCE\_WARP\_REDUCTIONS} algorithm.
 
+The tests are performed on a $A100$ GPU. Every layouts are tested for every method. We have three reference size tests:
+
+\begin{itemize}
+	\item $N = 1024$ and $M=32$ which is a small case where each warp can perform a complete unitary reduction using the \textit{CUB} block-reduction methods.
+	\item $N = 1024$ and $M=1024$ which is a case where each SM can perform a complete unitary reduction using the \textit{CUB} block-reduction methods.
+	\item $N = 1024$ and $M=1024$ which is a case big enough to fill the GPU even using the sequential embarassingly-parallel method.
+\end{itemize}
+
 \newpage
 \nocite{*}
 \bibliographystyle{unsrt}
