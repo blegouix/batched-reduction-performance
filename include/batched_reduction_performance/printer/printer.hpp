@@ -14,15 +14,7 @@ __global__ void print_1d_kernel(
     cuda::std::mdspan<double, cuda::std::extents<std::size_t, M>> data) {
   std::size_t i = blockIdx.x * blockDim.x + threadIdx.x;
 
-#if defined ALLOW_UNCOMPLETE_WARP
-  if (i < M) {
-#else
-  {
-    static_assert(M % 32 == 0, "Uncomplete warps are not allowed, fix the "
-                               "problem sizes or enable ALLOW_UNCOMPLETE_WARP");
-#endif
-    printf("%f ", static_cast<double>(data(i)));
-  }
+  printf("%f ", static_cast<double>(data(i)));
 }
 
 template <std::size_t M, std::size_t N, class Layout>
@@ -32,16 +24,7 @@ __global__ void print_2d_kernel(
   std::size_t i = blockIdx.x * blockDim.x + threadIdx.x;
   std::size_t j = blockIdx.y * blockDim.y + threadIdx.y;
 
-#if defined ALLOW_UNCOMPLETE_WARP
-  if (i < M && j < N) {
-#else
-  {
-    static_assert(M % 32 == 0 && N % 32 == 0,
-                  "Uncomplete warps are not allowed, fix the problem sizes or "
-                  "enable ALLOW_UNCOMPLETE_WARP");
-#endif
-    printf("%f ", static_cast<double>(data(i, j)));
-  }
+  printf("%f ", static_cast<double>(data(i, j)));
 }
 
 template <std::size_t BlockDim, std::size_t M>

@@ -4,14 +4,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(BatchedReductionPerformance VERSION 0.0.0 LANGUAGES CXX CUDA)
 
-# List of options
-
-option(ALLOW_UNCOMPLETE_WARP "Allow uncomplete warps and use branching to make extra threads inactive" OFF)
-# Custom variables
-if("${ALLOW_UNCOMPLETE_WARP}")
-  add_compile_definitions("ALLOW_UNCOMPLETE_WARP")
-endif()
-
 # Dependencies
 
 ## Google Benchmark
