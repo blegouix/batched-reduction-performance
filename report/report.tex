@@ -98,9 +98,34 @@ placeholder
 \setcounter{page}{1}
 \fancyfoot[R]{\thepage}
 
-\section{Placeholder}
+\section{Presentation}
 
-\subsection*{Introduction}
+% \subsection*{Introduction}
+
+\subsection{GPU Architecture}
+
+\textit{Graphical Processor Units} differentiate themselves from CPU by relying on the SIMT (Single-Instruction, Multiple Threads) execution model. It means an instruction in a CUDA computing kernel has to be executed by all the \textit{threads} forming a \textit{warp}, synchronously.
+
+The hardware architecture of the GPU is as follow:
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=\textwidth]{assets/gpu_arch.png}
+\end{center}
+\label{fig:gpu_arch}
+\end{figure}
+
+If threads inside a warp are automatically synchronized due to the SIMT model (an instruction has to be executed by all the threads within the warp before executing the next one), warps within a \textit{Stream Multiprocessor} or SMs within the GPU are running concurrently but not synchronously. It means warps and SM have to be synchronized using dedicated CUDA instruction to prevent race conditions.
+
+Note: if threads within a warp are running synchronously, the \textit{ordering} of the execution is undetermined (we do not know which thread will be the first to finish the execution of a single instruction).
+
+Note: since CUDA 9 the SIMT model has been slightly relaxed which can lead to subtle desynchronizations within a warp, which justify the need for the \textit{\_\_syncwarp()} CUDA function.
+
+\subsection{CUDA programming model}
+
+CUDA is the native language provided by Nvidia (chip manufacturer) to program for GPU. It relies on \textit{CUDA kernels} which contain the code to be executed on the GPU. 
+
+The calls of launching CUDA kernels are parametrized with two compile-time integers: the \textit{grid size} and the \emph{block size}. Those two numbers correspond respectively to the number of SM and the number of threads per SM to be used by the CUDA kernel. If the block size is not a multiple of the warp size (32 in every current architectures), the compiler will automatically mask off exceding threads.
 
 placeholder\cite{cudasharedmemory}
 
