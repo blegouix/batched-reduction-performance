@@ -18,21 +18,13 @@ __global__ void check_kernel(
         data) {
   std::size_t i = blockIdx.x * blockDim.x + threadIdx.x;
 
-#if defined ALLOW_UNCOMPLETE_WARP
-  if (i < M) {
-#else
-  {
-    static_assert(M % 32 == 0, "Uncomplete warps are not allowed, fix the "
-                               "problem sizes or enable ALLOW_UNCOMPLETE_WARP");
-#endif
-    double sum = 0;
-    for (std::size_t j = 0; j < N; ++j) {
-      sum += data(i, j);
-    }
+  double sum = 0;
+  for (std::size_t j = 0; j < N; ++j) {
+    sum += data(i, j);
+  }
 
-    if (fabs(reduced_data(i) - sum) > 1e-6) {
-      *mismatch = true;
-    }
+  if (fabs(reduced_data(i) - sum) > 1e-6) {
+    *mismatch = true;
   }
 }
 

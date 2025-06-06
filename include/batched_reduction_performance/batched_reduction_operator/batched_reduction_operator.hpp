@@ -20,21 +20,13 @@ __global__ void sequential_kernel(
         data_in) {
   std::size_t i = blockIdx.x * blockDim.x + threadIdx.x;
 
-#if defined ALLOW_UNCOMPLETE_WARP
-  if (i < M) {
-#else
-  {
-    static_assert(M % 32 == 0, "Uncomplete warps are not allowed, fix the "
-                               "problem sizes or enable ALLOW_UNCOMPLETE_WARP");
-#endif
-    double sum = 0;
+  double sum = 0;
 
-    for (std::size_t j = 0; j < N; ++j) {
-      sum += data_in(i, j);
-    }
-
-    data_out(i) = sum;
+  for (std::size_t j = 0; j < N; ++j) {
+    sum += data_in(i, j);
   }
+
+  data_out(i) = sum;
 }
 
 } // namespace detail
@@ -65,27 +57,7 @@ __global__ void cooperative_groups_kernel(
   std::size_t i = blockIdx.x;
   std::size_t j = threadIdx.x;
 
-  double val;
-#if defined ALLOW_UNCOMPLETE_WARP
-  if (i < M && j < N) {
-#else
-  {
-    static_assert(M % 32 == 0 && N % 32 == 0,
-                  "Uncomplete warps are not allowed, fix the problem sizes or "
-                  "enable ALLOW_UNCOMPLETE_WARP");
-#endif
-    val = data_in(i, j);
-  }
-#if defined ALLOW_UNCOMPLETE_WARP
-  else {
-    val = 0.;
-#else
-  {
-    static_assert(M % 32 == 0 && N % 32 == 0,
-                  "Uncomplete warps are not allowed, fix the problem sizes or "
-                  "enable ALLOW_UNCOMPLETE_WARP");
-#endif
-  }
+  double val = data_in(i, j);
 
   // Perform reduction within the block
   cooperative_groups::thread_block_tile<32> tile32 =
@@ -144,26 +116,8 @@ __global__ void cub_block_reduction_kernel(
   std::size_t j = threadIdx.x;
 
   double val;
-#if defined ALLOW_UNCOMPLETE_WARP
-  if (i < M && j < N) {
-#else
-  {
-    static_assert(M % 32 == 0 && N % 32 == 0,
-                  "Uncomplete warps are not allowed, fix the problem sizes or "
-                  "enable ALLOW_UNCOMPLETE_WARP");
-#endif
-    val = data_in(i, j);
-  }
-#if defined ALLOW_UNCOMPLETE_WARP
-  else {
-    val = 0.;
-#else
-  {
-    static_assert(M % 32 == 0 && N % 32 == 0,
-                  "Uncomplete warps are not allowed, fix the problem sizes or "
-                  "enable ALLOW_UNCOMPLETE_WARP");
-#endif
-  }
+
+  val = data_in(i, j);
 
   __shared__
       typename cub::BlockReduce<double, N, Algorithm>::TempStorage temp_storage;
